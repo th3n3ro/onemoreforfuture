@@ -18,7 +18,7 @@ export const reducer = (state, action) => {
     }
     case types.DATA_LOADING_FAIL: {
       const errorMessage = action.payload
-      return { ...state, errorMessage }
+      return { ...state, errorMessage, showLoader: false }
     }
     case types.ADD_USER: {
       const newUser = action.payload
