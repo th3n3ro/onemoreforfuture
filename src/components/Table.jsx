@@ -21,9 +21,9 @@ export const Table = memo(
         while (a[i].toLowerCase() === b[i].toLowerCase()) ++i
       } catch {
         // если мы так будем сравнивать 2 строки йцук и йцукенг, то выкинет ошибку
-        return -1
+        return 1
       }
-      return a[i] > b[i] ? n : -n
+      return a[i].toLowerCase() > b[i].toLowerCase() ? n : -n
     }
     const getTypeofSortField = field => {
       const [, sortFieldType] = types.find(([fieldName]) => fieldName === sortField)
@@ -75,7 +75,6 @@ export const Table = memo(
     const viewDataEndIndex = (currentPage - 1) * rowCount + rowCount
 
     const viewData = sortedData.slice(viewDataStartIndex, viewDataEndIndex)
-
     return (
       <BootstrapTable className="mt-2" striped bordered hover variant="dark">
         <thead onClick={sortTable}>

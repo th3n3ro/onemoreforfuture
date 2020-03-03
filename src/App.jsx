@@ -20,7 +20,7 @@ const App = () => {
   const [localTableData, setLocalTableData] = useState(state.loadedData)
   const [selectedUser, setSelectedUser] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
-  const [rowCount, setRowCount] = useState(50)
+  const [rowCount] = useState(50)
   const [maxPage, setMaxPage] = useState(null)
   const [search, setSearch] = useState(``)
 
@@ -79,9 +79,15 @@ const App = () => {
   }, [rowCount, currentPage, localTableData])
 
   const filterTable = useCallback(() => {
+    // Фильтруем только те значения, которые в таблице
     const lowerValue = search.toLowerCase()
     const filter = pieaceData => {
-      return Object.values(pieaceData).some(v =>
+      const onlyInViewOfTable = Object.entries(pieaceData).filter(([key]) =>
+        types.current.some(([type]) => type === key)
+      )
+
+      const values = onlyInViewOfTable.map(([key, value]) => value)
+      return values.some(v =>
         v
           .toString()
           .toLowerCase()
@@ -107,6 +113,8 @@ const App = () => {
   useEffect(filterTable, [filterTable])
   useEffect(switchPage, [switchPage])
   useEffect(loadData, [loadData])
+
+  if (state.errorMessage) return <div>{state.errorMessage}</div>
 
   return state.selectedDataUrl ? (
     localTableData ? (
