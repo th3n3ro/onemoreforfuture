@@ -1,4 +1,4 @@
-import React, { useEffect, useContext, useRef, useState, useCallback } from 'react'
+import React, { useEffect, useContext, useRef, useCallback, useReducer } from 'react'
 import { Button } from 'react-bootstrap'
 
 import { StateContext } from './components/StateContext'
@@ -17,20 +17,25 @@ import { Table } from './components/Table'
 const App = () => {
   const { state, dispatch } = useContext(StateContext)
 
-  const [localTableData, setLocalTableData] = useState(state.loadedData)
-  const [selectedUser, setSelectedUser] = useState(null)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [rowCount] = useState(50)
-  const [maxPage, setMaxPage] = useState(null)
-  const [search, setSearch] = useState(``)
+  const [{ filteredData, selectedUser, rowCount, currentPage, maxPage, search }, setAppState] = useReducer(
+    (s, a) => ({ ...s, ...a }),
+    {
+      filteredData: null,
+      selectedUser: null,
+      rowCount: 50,
+      currentPage: 1,
+      maxPage: null,
+      search: ``
+    }
+  )
 
   const searchInput = useRef(null)
   const types = useRef([
-    ['id', 'number'],
-    ['firstName', 'string'],
-    ['lastName', 'string'],
-    ['email', 'string'],
-    ['phone', 'string']
+    ['id', Number],
+    ['firstName', String],
+    ['lastName', String],
+    ['email', String],
+    ['phone', String]
   ])
 
   const addUser = ({ target: form }) => {
@@ -46,7 +51,7 @@ const App = () => {
   const changeSearchParams = e => {
     e.preventDefault()
     const value = searchInput.current.value
-    setSearch(() => value)
+    setAppState({ search: value })
   }
 
   const loadBigData = () => {
@@ -57,26 +62,30 @@ const App = () => {
     dispatch(actions.selectDataUrl(smallDataUrl))
   }
 
-  const changePage = page => setCurrentPage(() => +page)
+  const changePage = page => setAppState({ currentPage: +page, selectedUser: null })
 
   const showUserInformation = useCallback(user => {
     const { firstName, lastName, description, address } = user
-    setSelectedUser(() => ({
-      firstName,
-      lastName,
-      description,
-      ...address
-    }))
+    setAppState({
+      selectedUser: {
+        firstName,
+        lastName,
+        description,
+        ...address
+      }
+    })
   }, [])
 
   const switchPage = useCallback(() => {
-    if (localTableData) {
-      const newMaxPage = Math.ceil(localTableData.length / rowCount)
+    if (filteredData) {
+      const newMaxPage = Math.ceil(filteredData.length / rowCount) || 1
       const newCurrentPage = currentPage > newMaxPage ? 1 : currentPage
-      setCurrentPage(() => newCurrentPage)
-      setMaxPage(() => newMaxPage)
+      setAppState({
+        currentPage: newCurrentPage,
+        maxPage: newMaxPage
+      })
     }
-  }, [rowCount, currentPage, localTableData])
+  }, [filteredData, rowCount, currentPage])
 
   const filterTable = useCallback(() => {
     // Фильтруем только те значения, которые в таблице
@@ -86,7 +95,7 @@ const App = () => {
         types.current.some(([type]) => type === key)
       )
 
-      const values = onlyInViewOfTable.map(([key, value]) => value)
+      const values = onlyInViewOfTable.map(([_, value]) => value)
       return values.some(v =>
         v
           .toString()
@@ -94,8 +103,8 @@ const App = () => {
           .includes(lowerValue)
       )
     }
-    if (state.loadedData) setLocalTableData(() => state.loadedData.filter(filter))
-  }, [state.loadedData, setLocalTableData, search])
+    if (state.loadedData) setAppState({ filteredData: state.loadedData.filter(filter) })
+  }, [state.loadedData, search])
 
   const loadData = useCallback(() => {
     const fetchData = async () => {
@@ -117,7 +126,7 @@ const App = () => {
   if (state.errorMessage) return <div>{state.errorMessage}</div>
 
   return state.selectedDataUrl ? (
-    localTableData ? (
+    filteredData ? (
       <div className="flex flex-column">
         <div className="flex justify-space-between relative w100p mt-2">
           <form onSubmit={changeSearchParams}>
@@ -137,7 +146,7 @@ const App = () => {
           defaultSortField="id"
           currentPage={currentPage}
           rowCount={rowCount}
-          data={localTableData}
+          data={filteredData}
           types={types.current}
         />
         {selectedUser && <UserCard {...selectedUser} />}

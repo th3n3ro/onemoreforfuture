@@ -2,45 +2,42 @@ import React, { useState, memo } from 'react'
 import { Table as BootstrapTable } from 'react-bootstrap'
 
 export const Table = memo(
-  ({ data, types, rowCount = 50, currentPage = 1, defaultSortField, sortType = 'desc', onRowClick }) => {
-    // sortType= "desc"||"asc"
-    const [[sortField, sortBy], setSort] = useState([defaultSortField, sortType])
+  ({ data, types, rowCount = 50, currentPage = 1, defaultSortField, defaultSortBy = 'desc', onRowClick }) => {
+    // defaultSortBy= "desc"||"asc"
+    const [sortBy, setSortBy] = useState(defaultSortBy)
+    const [sortField, setSortField] = useState(defaultSortField)
 
     const generateUniqKey = (acc, value) => {
       return acc + value.toString()
     }
-    const sortAsNumber = (a, b, sortType) => {
-      const n = sortType === 'desc' ? -1 : 1
-      return +a > +b ? n : -n
+    const sortAsNumber = (a, b) => {
+      const n = sortBy === 'desc' ? -1 : 1
+      return +a[sortField] > +b[sortField] ? n : -n
     }
-    const sortAsString = (a, b, sortType) => {
-      const n = sortType === 'desc' ? 1 : -1
-
+    const sortAsString = (a, b) => {
+      const n = sortBy === 'desc' ? -1 : 1
       let i = 0
       try {
-        while (a[i].toLowerCase() === b[i].toLowerCase()) ++i
+        while (a[sortField][i].toLowerCase() === b[sortField][i].toLowerCase()) ++i
       } catch {
         // если мы так будем сравнивать 2 строки йцук и йцукенг, то выкинет ошибку
         return 1
       }
-      return a[i].toLowerCase() > b[i].toLowerCase() ? n : -n
+      return a[sortField][i].toLowerCase() > b[sortField][i].toLowerCase() ? -n : n
     }
-    const getTypeofSortField = field => {
+    const getTypeofSortField = () => {
       const [, sortFieldType] = types.find(([fieldName]) => fieldName === sortField)
       return sortFieldType
     }
 
-    const sort = (a, b) => {
+    const sort = () => {
       const typeofSortField = getTypeofSortField(sortField)
-      const sortFieldValue1 = a[sortField]
-      const sortFieldValue2 = b[sortField]
-
       switch (typeofSortField) {
-        case 'number': {
-          return sortAsNumber(sortFieldValue1, sortFieldValue2, sortBy)
+        case Number: {
+          return sortAsNumber
         }
-        case 'string': {
-          return sortAsString(sortFieldValue1, sortFieldValue2, sortBy)
+        case String: {
+          return sortAsString
         }
         default: {
           throw new Error('Дружочек, я не могу сортировать по такому типу')
@@ -48,16 +45,14 @@ export const Table = memo(
       }
     }
 
-    const reverseSort = () => {
-      const newSortBy = sortBy === 'desc' ? 'asc' : 'desc'
-      setSort(() => [sortField, newSortBy])
-    }
+    const reverseSort = () => setSortBy(prevSort => (prevSort === 'desc' ? 'asc' : 'desc'))
 
     const sortTable = ({ target }) => {
       if (target.tagName !== 'TD') return
       const clickedField = target.dataset.fieldName
       if (clickedField === sortField) return reverseSort()
-      setSort(() => [clickedField, sortType])
+      setSortField(clickedField)
+      setSortBy(defaultSortBy)
     }
     const handleRowClick = ({ target }) => {
       const tr = target.closest('tr')
@@ -69,21 +64,21 @@ export const Table = memo(
       onRowClick(peaceData)
     }
 
-    const sortedData = data.sort(sort)
+    const sortedData = data.sort(sort())
 
     const viewDataStartIndex = (currentPage - 1) * rowCount
     const viewDataEndIndex = (currentPage - 1) * rowCount + rowCount
 
     const viewData = sortedData.slice(viewDataStartIndex, viewDataEndIndex)
     return (
-      <BootstrapTable className="mt-2" striped bordered hover variant="dark">
+      <BootstrapTable className="mt-2" striped bordered hover responsive variant="dark">
         <thead onClick={sortTable}>
           <tr>
             {types.map(([fieldName]) => (
               <td data-field-name={fieldName} key={fieldName}>
-                {fieldName}
-                {fieldName === sortField && sortBy === 'desc' && <span> &#11167;</span>}
-                {fieldName === sortField && sortBy === 'asc' && <span> &#11165;</span>}
+                <span> {fieldName} </span>
+                {fieldName === sortField && sortBy === 'desc' && <span className="arrow-down"></span>}
+                {fieldName === sortField && sortBy === 'asc' && <span className="arrow-up"></span>}
               </td>
             ))}
           </tr>
@@ -93,7 +88,7 @@ export const Table = memo(
             const peaceDataKey = Object.values(data).reduce(generateUniqKey, ``)
             const pieaceDataIndex = viewDataStartIndex + index
             return (
-              <tr data-peace-data-key={[peaceDataKey]} key={peaceDataKey}>
+              <tr data-peace-data-key={peaceDataKey} key={peaceDataKey}>
                 {types.map(([fieldName]) => (
                   <td key={fieldName}>{sortedData[pieaceDataIndex][fieldName]}</td>
                 ))}

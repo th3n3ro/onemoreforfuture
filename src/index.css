@@ -146,3 +146,25 @@ code {
 .f-sz-14 {
     font-size: 14px;
 }
+
+.arrow-up {
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 5px solid #ffffff;
+    position: relative;
+    top: -10px;
+    left: 5px;
+}
+
+.arrow-down {
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid#ffffff;
+    position: relative;
+    top: 15px;
+    left: 5px;
+}
